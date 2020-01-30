@@ -45,7 +45,7 @@ public class DriverController extends DriverDo {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    @GetMapping("allDrivers")
+    @GetMapping("/allDrivers")
     public ResponseEntity<?> getDriverWithFilterWithOutFilter(@RequestParam(required = false,name = "manufacturer") String manufacturer,
                                                               @RequestParam(required = false, name = "engineType") String engineType) {
         List<Driver> list;
@@ -118,7 +118,7 @@ public class DriverController extends DriverDo {
         return ResponseEntity.ok(new AuthenticationResponse(jwt));
     }
 
-    @PostMapping("/select")
+    @PutMapping("/select")
     public ResponseEntity<?> selectCarByDriver(@RequestParam(required = false, name = "carId") Long carId, Principal principal) throws CarAlreadyInUseException {
 
         Car car = carService.get(carId);
@@ -137,9 +137,8 @@ public class DriverController extends DriverDo {
             throw new CarAlreadyInUseException("Car is is already used by other driver with Id : " + driver.getId());
         }
     }
-    @PostMapping("/deselect")
-    public ResponseEntity<?> deselectCarByDriver(@RequestParam(name = "driverId") Long driverId,
-                                              @RequestParam(required = false, name = "carId") Long carId){
+    @PutMapping("/deselect")
+    public ResponseEntity<?> deselectCarByDriver(@RequestParam(name = "driverId") Long driverId){
 
         Driver driver = driverService.get(driverId);
         driver.setCar(null);
