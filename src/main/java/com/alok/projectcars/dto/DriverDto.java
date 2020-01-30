@@ -1,4 +1,4 @@
-package com.alok.projectcars.domain;
+package com.alok.projectcars.dto;
 
 import lombok.*;
 
@@ -7,7 +7,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class CarDomain {
+public class DriverDto {
     private Long id;
     private String name;
+    private String msg;
 }

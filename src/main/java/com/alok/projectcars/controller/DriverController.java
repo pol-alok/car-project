@@ -4,6 +4,7 @@ import com.alok.projectcars.dao.model.AuthenticationRequest;
 import com.alok.projectcars.dao.model.AuthenticationResponse;
 import com.alok.projectcars.dao.model.Car;
 import com.alok.projectcars.dao.model.Driver;
+import com.alok.projectcars.dto.DriverDto;
 import com.alok.projectcars.exception.CarAlreadyInUseException;
 import com.alok.projectcars.jwtService.DriverDetailService;
 import com.alok.projectcars.services.CarService;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/driver")
-public class DriverController {
+public class DriverController extends DriverDo {
 
     @Autowired
     DriverService driverService;
@@ -44,31 +45,38 @@ public class DriverController {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    @GetMapping
+    @GetMapping("allDrivers")
     public ResponseEntity<?> getDriverWithFilterWithOutFilter(@RequestParam(required = false,name = "manufacturer") String manufacturer,
                                                               @RequestParam(required = false, name = "engineType") String engineType) {
         List<Driver> list;
-        System.out.println(manufacturer+" "+engineType);
-        if(manufacturer != null) {
+        //        System.out.println(manufacturer+" "+engineType);
+        try {
 
-            list =  driverService.listAll().stream()
-                    .filter((driver) ->  {
-                        if(driver.getCar()!=null) {
-                            return driver.getCar().getManufacturer().equals(manufacturer);
-                        } else {
-                            return false;
-                        }
-                    })
-                    .collect(Collectors.toList());
+            if(manufacturer != null) {
 
-        } else if(engineType!=null) {
-            list =  driverService.listAll().stream()
-                    .filter((driver) -> driver.getCar().getEngineType().equals(engineType))
-                    .collect(Collectors.toList());
-        } else  {
-            list =  driverService.listAll();
+                list =  driverService.listAll().stream()
+                        .filter((driver) ->  {
+                            if(driver.getCar()!=null) {
+                                return driver.getCar().getManufacturer().equals(manufacturer);
+                            } else {
+                                return false;
+                            }
+                        })
+                        .collect(Collectors.toList());
+
+            } else if(engineType!=null) {
+                list =  driverService.listAll().stream()
+                        .filter((driver) -> driver.getCar().getEngineType().equals(engineType))
+                        .collect(Collectors.toList());
+            } else  {
+                list =  driverService.listAll();
+            }
+            return new ResponseEntity<>(list, HttpStatus.OK);
+
+        }catch (Exception e) {
+            return new ResponseEntity<>("Error in getting the data", HttpStatus.INTERNAL_SERVER_ERROR);
+
         }
-        return new ResponseEntity<>(list, HttpStatus.OK);
     }
     @PostMapping("/signUp")
     public ResponseEntity<?> driverSignUp(@RequestParam(name = "name") String name,
@@ -78,7 +86,7 @@ public class DriverController {
         Driver driver = new Driver(null,name,encryptedPass,"DRIVER",null);
         try {
             driverService.save(driver);
-            return new ResponseEntity<>(driver, HttpStatus.CREATED);
+            return new ResponseEntity<>(new DriverDto(driver.getId(),driver.getName(),"SignUp Successfully!"), HttpStatus.CREATED);
         }
         catch (Exception e) {
             return new ResponseEntity<>("Error in saving the data",HttpStatus.INTERNAL_SERVER_ERROR);
@@ -87,7 +95,7 @@ public class DriverController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest) throws Exception {
-        System.out.println("controller is here");
+//        System.out.println("controller is here");
         try {
 
             authenticationManager.authenticate(
@@ -115,15 +123,19 @@ public class DriverController {
 
         Car car = carService.get(carId);
         Driver driver = driverService.findByName(principal.getName());
-            if(car.getStatus()==null || car.getStatus()==false) {
-                car.setStatus(true);
-                driver.setCar(car);
-                driverService.save(driver);
-                return new ResponseEntity<>(driver, HttpStatus.OK);
-            } else  {
-                throw new CarAlreadyInUseException("Car is is already used by other driver with Id : " + driver.getId());
-            }
-
+//            if(car.getStatus()==null || car.getStatus()==false) {
+//                car.setStatus(true);
+//                driver.setCar(car);
+//                driverService.save(driver);
+//                return new ResponseEntity<>(new DriverDto(driver.getId(),driver.getName(),"Driver selected car Successfully!"), HttpStatus.OK);
+//            } else  {
+//                throw new CarAlreadyInUseException("Car is is already used by other driver with Id : " + driver.getId());
+//            }
+        if(selectCar(car,driver,driverService)) {
+            return new ResponseEntity<>(new DriverDto(driver.getId(),driver.getName(),"Driver selected car Successfully!"), HttpStatus.OK);
+        } else  {
+            throw new CarAlreadyInUseException("Car is is already used by other driver with Id : " + driver.getId());
+        }
     }
     @PostMapping("/deselect")
     public ResponseEntity<?> deselectCarByDriver(@RequestParam(name = "driverId") Long driverId,
@@ -133,7 +145,7 @@ public class DriverController {
         driver.setCar(null);
         try {
             driverService.save(driver);
-            return new ResponseEntity<>(driver, HttpStatus.OK);
+            return new ResponseEntity<>(new DriverDto(driver.getId(),driver.getName(),"Driver deselected car Successfully!"), HttpStatus.OK);
         }
         catch (Exception e) {
             return new ResponseEntity<>("Error in saving the data",HttpStatus.INTERNAL_SERVER_ERROR);
